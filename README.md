@@ -1,4 +1,4 @@
-# CogniCore: Bilişsel Kapsayıcılık Motoru
+# NEXUS_AI: Bilişsel Kapsayıcılık Motoru
 
 ##  Proje Hakkında
 CogniCore, uzun ve karmaşık metinleri DEHB ve Disleksi gibi farklı bilişsel profillere sahip bireyler için anında uyarlayan ve daha erişilebilir kılan bir yapay zeka asistanıdır. 
