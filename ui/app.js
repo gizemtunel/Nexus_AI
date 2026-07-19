@@ -1,6 +1,5 @@
 const sourceText = document.getElementById("sourceText");
 const reader = document.getElementById("reader");
-const tldrList = document.getElementById("tldrList");
 const readTime = document.getElementById("readTime");
 const speed = document.getElementById("speed");
 const fontSize = document.getElementById("fontSize");
@@ -14,7 +13,7 @@ let currentTokens = [];
 let renderedTokens = [];
 let tokenIndex = 0;
 let requestId = 0;
-let currentTldr = [];
+let readerTrack = null;
 
 const speedLabels = {
   1: "Çok sakin",
@@ -46,14 +45,32 @@ function clearTimer() {
   }
 }
 
+function ensureTrack() {
+  if (readerTrack) {
+    return readerTrack;
+  }
+
+  reader.innerHTML = "";
+  readerTrack = document.createElement("div");
+  readerTrack.className = "reader-track";
+  reader.appendChild(readerTrack);
+  return readerTrack;
+}
+
 function centerLatestBlock() {
-  const latestBlock = reader.querySelector(".block:last-of-type");
+  const track = ensureTrack();
+  const latestBlock = track.querySelector(".block:last-of-type");
+
   if (!latestBlock) {
     return;
   }
 
   window.requestAnimationFrame(() => {
-    latestBlock.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+    const targetTop = latestBlock.offsetTop - (reader.clientHeight / 2) + (latestBlock.offsetHeight / 2);
+    reader.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "auto"
+    });
   });
 }
 
@@ -86,60 +103,40 @@ function renderBionicText(htmlFragment) {
   return htmlFragment.replace(/\n/g, "<br />");
 }
 
-function renderTldr(items) {
-  tldrList.innerHTML = "";
-
-  if (!items.length) {
-    const empty = document.createElement("li");
-    empty.textContent = "Özet hazırlanıyor...";
-    tldrList.appendChild(empty);
-    return;
-  }
-
-  items.slice(0, 3).forEach((item) => {
-    const li = document.createElement("li");
-    li.innerHTML = renderBionicText(escapeHtml(item));
-    tldrList.appendChild(li);
-  });
-}
-
 function setReadTime(minutes) {
   readTime.textContent = minutes > 0 ? `${minutes} dk okuma süresi` : "Okuma süresi hesaplanamadı";
 }
 
 function render() {
-  reader.innerHTML = "";
+  readerTrack = null;
+  ensureTrack();
   renderedTokens = [];
 
   if (!currentTokens.length) {
-    reader.textContent = "Metin bekleniyor...";
+    readerTrack.textContent = "Metin bekleniyor...";
     return;
   }
-
-  const cursor = document.createElement("span");
-  cursor.className = "cursor";
-  cursor.textContent = "▍";
-  reader.appendChild(cursor);
 }
 
 function updateReader() {
-  const previewPieces = renderedTokens;
-  reader.innerHTML = "";
+  const previewPieces = renderedTokens.length ? renderedTokens : ["Metin hazırlanıyor..."];
+  const track = ensureTrack();
 
-  previewPieces.forEach((piece, index) => {
+  while (track.children.length < previewPieces.length) {
     const block = document.createElement("span");
     block.className = "block";
-    block.innerHTML = renderBionicText(piece);
-    reader.appendChild(block);
-    if (index < previewPieces.length - 1) {
-      reader.appendChild(document.createTextNode("\n\n"));
-    }
-  });
+    track.appendChild(block);
+  }
 
-  const cursor = document.createElement("span");
-  cursor.className = "cursor";
-  cursor.textContent = renderedTokens.length < currentTokens.length ? "▍" : "";
-  reader.appendChild(cursor);
+  while (track.children.length > previewPieces.length) {
+    track.removeChild(track.lastElementChild);
+  }
+
+  Array.from(track.children).forEach((block, index) => {
+    const piece = previewPieces[index];
+    block.innerHTML = renderBionicText(piece);
+    block.style.setProperty("--layer", String(index));
+  });
 
   centerLatestBlock();
 }
@@ -164,11 +161,10 @@ function startStreaming() {
       currentTokens = Array.isArray(payload.blocks) && payload.blocks.length
         ? payload.blocks
         : tokenize(sourceText.value);
-      currentTldr = Array.isArray(payload.tldr) ? payload.tldr : [];
-      renderTldr(currentTldr);
       setReadTime(Number(payload.read_time_minutes) || 0);
       renderedTokens = [];
       tokenIndex = 0;
+      readerTrack = null;
       updateReader();
 
       const interval = Number(payload.interval_ms) || fallbackInterval;
@@ -196,11 +192,10 @@ function startStreaming() {
       }
 
       currentTokens = tokenize(sourceText.value);
-      currentTldr = [];
-      renderTldr(currentTldr);
       setReadTime(0);
       renderedTokens = [];
       tokenIndex = 0;
+      readerTrack = null;
       updateReader();
 
       timerId = window.setInterval(() => {
@@ -226,6 +221,7 @@ function showInstant() {
   clearTimer();
   currentTokens = tokenize(sourceText.value);
   renderedTokens = [...currentTokens];
+  readerTrack = null;
   updateReader();
 }
 
