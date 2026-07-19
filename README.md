@@ -15,3 +15,18 @@ Sistem, metnin okunabilirliğini ve bilişsel yükünü algoritmalarla analiz ed
 * `models/` : Eğitilmiş ağırlıklar ve model dosyaları.
 * `src/` : API ve ana uygulama kodları.
 * `ui/` : Kullanıcı arayüzü bileşenleri.
+
+## Çalıştırma
+
+Bu demo için FastAPI seçildi. Django burada gereğinden ağır kalırdı; tek ekranlık okunabilirlik arayüzü ve ileride eklenecek metin işleme endpoint'i için FastAPI daha uygun.
+
+Kurulum:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn src.app:app --reload
+```
+
+Tarayıcıdan `http://127.0.0.1:8000` adresini açın.
