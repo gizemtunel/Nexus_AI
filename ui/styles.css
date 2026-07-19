@@ -18,13 +18,16 @@
 
 html {
   scroll-behavior: smooth;
+  height: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  height: 100%;
   font-family: "Atkinson Hyperlegible", "Space Grotesk", sans-serif;
   color: var(--text);
+  overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(110, 231, 255, 0.16), transparent 30%),
     radial-gradient(circle at 85% 20%, rgba(157, 255, 183, 0.14), transparent 24%),
@@ -43,74 +46,23 @@ body::before {
   opacity: 0.5;
 }
 
-.shell {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 32px 0 48px;
+.app-shell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.hero {
-  display: grid;
-  grid-template-columns: 1.4fr 0.9fr;
-  gap: 24px;
-  align-items: stretch;
-}
-
-.hero-copy,
-.control-panel,
-.input-card,
-.output-card {
+.control-dock,
+.reader-stage-frame,
+.summary-card,
+.reader {
   background: var(--panel);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
   backdrop-filter: blur(18px);
 }
 
-.hero-copy {
-  padding: 32px;
-  border-radius: 28px;
-}
-
-.eyebrow {
-  margin: 0 0 14px;
-  color: var(--accent);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-size: 0.82rem;
-}
-
-h1 {
-  margin: 0;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: clamp(2.4rem, 4.2vw, 4.8rem);
-  line-height: 0.98;
-  letter-spacing: -0.05em;
-  max-width: 11ch;
-}
-
-.lede {
-  max-width: 60ch;
-  margin: 20px 0 0;
-  color: var(--muted);
-  font-size: 1.05rem;
-  line-height: 1.75;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 30px;
-}
-
-.stats div {
-  padding: 16px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.stats span,
 .card-head p,
 .field small {
   display: block;
@@ -118,19 +70,19 @@ h1 {
   font-size: 0.9rem;
 }
 
-.stats strong {
-  display: block;
-  margin-top: 8px;
-  font-size: 1rem;
-  line-height: 1.4;
-}
-
-.control-panel {
+.control-dock {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: min(360px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
   border-radius: 28px;
-  padding: 22px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  z-index: 20;
 }
 
 .panel-header {
@@ -180,6 +132,16 @@ input[type="range"] {
   height: 18px;
 }
 
+.dock-head h2 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.15rem;
+}
+
+.dock-head p {
+  margin: 8px 0 0;
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -214,32 +176,60 @@ button.ghost {
   border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-.reader-grid {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: 24px;
-  margin-top: 24px;
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
 }
 
-.input-card,
-.output-card {
-  border-radius: 28px;
-  padding: 22px;
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(110, 231, 255, 0.12);
+  border: 1px solid rgba(110, 231, 255, 0.24);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
-.card-head h2 {
+.meta-pill-soft {
+  background: rgba(157, 255, 183, 0.1);
+  border-color: rgba(157, 255, 183, 0.2);
+}
+
+.summary-card {
+  margin: 18px auto 0;
+  width: min(900px, 100%);
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-card h3 {
   margin: 0;
   font-family: "Space Grotesk", sans-serif;
-  font-size: 1.4rem;
+  font-size: 1rem;
 }
 
-.card-head p {
-  margin: 8px 0 0;
+.summary-card ul {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.summary-card li {
+  line-height: 1.7;
+  color: var(--muted);
 }
 
 textarea {
   width: 100%;
-  min-height: 360px;
+  min-height: 220px;
   margin-top: 18px;
   resize: vertical;
   padding: 18px;
@@ -260,26 +250,57 @@ input:focus-visible {
 }
 
 .reader {
-  margin-top: 18px;
+  margin: 18px auto 0;
+  width: min(900px, 100%);
+  height: calc(100vh - 240px);
   min-height: 360px;
-  padding: 22px;
+  padding: 0 16px;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #f7fbff;
-  line-height: 1.95;
+  line-height: 2;
   letter-spacing: 0.01em;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   white-space: pre-wrap;
+  overflow-y: auto;
+  scrollbar-width: none;
+  scroll-behavior: auto;
+  padding-block: 45vh;
+  scroll-padding-block: 50vh;
 }
 
 .reader.focus-mode {
   max-width: 72ch;
+  margin-inline: auto;
+}
+
+.reader .block {
+  display: block;
+  margin-bottom: 16px;
+  padding: 0.55rem 0.65rem;
+  border-radius: 16px;
+  text-align: center;
+  transition: transform 180ms ease, background-color 180ms ease;
+}
+
+.reader.focus-mode .block:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.reader .block strong,
+.summary-card strong {
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .reader span {
   display: inline-block;
   animation: rise 420ms ease both;
+}
+
+.reader::-webkit-scrollbar {
+  display: none;
 }
 
 .cursor {
@@ -310,38 +331,33 @@ input:focus-visible {
 }
 
 @media (max-width: 960px) {
-  .hero,
-  .reader-grid {
-    grid-template-columns: 1fr;
+  .control-dock {
+    width: min(92vw, 420px);
+    max-height: 46vh;
   }
 
-  .stats {
-    grid-template-columns: 1fr;
+  .reader {
+    height: calc(100vh - 160px);
   }
 }
 
 @media (max-width: 640px) {
-  .shell {
-    width: min(100% - 20px, 1180px);
-    padding: 20px 0 32px;
-  }
-
-  .hero-copy,
-  .control-panel,
-  .input-card,
-  .output-card {
+  .control-dock {
+    top: 12px;
+    left: 12px;
+    width: calc(100vw - 24px);
     border-radius: 22px;
+    max-height: 44vh;
   }
 
-  .hero-copy {
-    padding: 24px;
+  .reader {
+    width: calc(100vw - 24px);
+    height: calc(100vh - 140px);
+    font-size: 1.18rem;
+    padding-inline: 10px;
   }
 
   .actions {
     flex-direction: column;
-  }
-
-  .reader {
-    font-size: 1.15rem;
   }
 }

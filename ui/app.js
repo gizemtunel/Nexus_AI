@@ -1,5 +1,7 @@
 const sourceText = document.getElementById("sourceText");
 const reader = document.getElementById("reader");
+const tldrList = document.getElementById("tldrList");
+const readTime = document.getElementById("readTime");
 const speed = document.getElementById("speed");
 const fontSize = document.getElementById("fontSize");
 const focusMode = document.getElementById("focusMode");
@@ -12,6 +14,7 @@ let currentTokens = [];
 let renderedTokens = [];
 let tokenIndex = 0;
 let requestId = 0;
+let currentTldr = [];
 
 const speedLabels = {
   1: "Çok sakin",
@@ -36,31 +39,22 @@ function tokenize(text) {
     .flatMap((sentence) => sentence.split(/\s+/));
 }
 
-function buildAccessiblePreview(text) {
-  const sentences = text
-    .replace(/\s+/g, " ")
-    .trim()
-    .split(/(?<=[.!?])\s+/)
-    .filter(Boolean);
-
-  if (!sentences.length) {
-    return ["Metin gelmedi. Soldaki alana içerik ekleyin."];
-  }
-
-  return sentences.map((sentence, index) => {
-    const shortSentence = sentence.length > 140
-      ? sentence.match(/.{1,120}(?:\s|$)/g)?.join("\n") ?? sentence
-      : sentence;
-
-    return index % 2 === 0 ? shortSentence : `• ${shortSentence}`;
-  });
-}
-
 function clearTimer() {
   if (timerId) {
     window.clearInterval(timerId);
     timerId = null;
   }
+}
+
+function centerLatestBlock() {
+  const latestBlock = reader.querySelector(".block:last-of-type");
+  if (!latestBlock) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    latestBlock.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+  });
 }
 
 async function fetchPreview(text, speedValue) {
@@ -79,6 +73,40 @@ async function fetchPreview(text, speedValue) {
   return response.json();
 }
 
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderBionicText(htmlFragment) {
+  return htmlFragment.replace(/\n/g, "<br />");
+}
+
+function renderTldr(items) {
+  tldrList.innerHTML = "";
+
+  if (!items.length) {
+    const empty = document.createElement("li");
+    empty.textContent = "Özet hazırlanıyor...";
+    tldrList.appendChild(empty);
+    return;
+  }
+
+  items.slice(0, 3).forEach((item) => {
+    const li = document.createElement("li");
+    li.innerHTML = renderBionicText(escapeHtml(item));
+    tldrList.appendChild(li);
+  });
+}
+
+function setReadTime(minutes) {
+  readTime.textContent = minutes > 0 ? `${minutes} dk okuma süresi` : "Okuma süresi hesaplanamadı";
+}
+
 function render() {
   reader.innerHTML = "";
   renderedTokens = [];
@@ -95,13 +123,13 @@ function render() {
 }
 
 function updateReader() {
-  const previewPieces = buildAccessiblePreview(renderedTokens.join(" "));
+  const previewPieces = renderedTokens;
   reader.innerHTML = "";
 
   previewPieces.forEach((piece, index) => {
     const block = document.createElement("span");
     block.className = "block";
-    block.textContent = piece;
+    block.innerHTML = renderBionicText(piece);
     reader.appendChild(block);
     if (index < previewPieces.length - 1) {
       reader.appendChild(document.createTextNode("\n\n"));
@@ -112,6 +140,8 @@ function updateReader() {
   cursor.className = "cursor";
   cursor.textContent = renderedTokens.length < currentTokens.length ? "▍" : "";
   reader.appendChild(cursor);
+
+  centerLatestBlock();
 }
 
 function startStreaming() {
@@ -134,6 +164,9 @@ function startStreaming() {
       currentTokens = Array.isArray(payload.blocks) && payload.blocks.length
         ? payload.blocks
         : tokenize(sourceText.value);
+      currentTldr = Array.isArray(payload.tldr) ? payload.tldr : [];
+      renderTldr(currentTldr);
+      setReadTime(Number(payload.read_time_minutes) || 0);
       renderedTokens = [];
       tokenIndex = 0;
       updateReader();
@@ -163,6 +196,9 @@ function startStreaming() {
       }
 
       currentTokens = tokenize(sourceText.value);
+      currentTldr = [];
+      renderTldr(currentTldr);
+      setReadTime(0);
       renderedTokens = [];
       tokenIndex = 0;
       updateReader();
